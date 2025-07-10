@@ -1,47 +1,11 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Inventario Inteligente</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            padding: 40px;
-            background-color: #f4f4f4;
-        }
-        h1 {
-            color: #333;
-        }
-        form {
-            background: #fff;
-            padding: 20px;
-            border-radius: 8px;
-        }
-        input[type="file"], input[type="submit"] {
-            margin-top: 10px;
-        }
-        .boton-descargar {
-            display: inline-block;
-            margin-top: 20px;
-            padding: 10px 15px;
-            background-color: #007bff;
-            color: white;
-            text-decoration: none;
-            border-radius: 5px;
-        }
-        .boton-descargar:hover {
-            background-color: #0056b3;
-        }
-    </style>
-</head>
-<body>
-    <h1>Procesar Inventario</h1>
-    <form action="/procesar" method="POST" enctype="multipart/form-data">
-        <label for="archivo">Selecciona un archivo Excel:</label><br>
-        <input type="file" name="archivo" id="archivo" accept=".xlsx, .xls" required><br><br>
-        <input type="submit" value="Procesar archivo">
-    </form>
-
-    <a href="/descargar-plantilla" class="boton-descargar">Descargar Plantilla</a>
-</body>
-</html>
+{% extends "layout.html" %}
+{% block title %}Inicio - Inventariate{% endblock %}
+{% block content %}
+    <h1 class="mb-4">Bienvenido a Inventariate</h1>
+    <p>Desde este panel podrás gestionar el inventario de tu empresa fácilmente.</p>
+    <ul>
+        <li>Sube tus archivos de inventario en Excel</li>
+        <li>Obtén automáticamente los valores de stock mínimo y seguridad</li>
+        <li>Consulta, modifica o exporta tu inventario</li>
+    </ul>
+{% endblock %}
