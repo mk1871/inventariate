@@ -12,10 +12,27 @@ allowed_extensions = {'xlsx', 'xls'}
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_extensions
 
+# RUTA: Página de inicio
 @app.route('/')
 def home():
     return render_template('index.html')
 
+# RUTA: Página para subir Excel
+@app.route('/subir')
+def subir_excel():
+    return render_template('upload.html')
+
+# RUTA: Página del inventario
+@app.route('/inventario')
+def inventario():
+    return render_template('inventario.html')
+
+# RUTA: Página de login
+@app.route('/login')
+def login():
+    return render_template('login.html')
+
+# RUTA: Descargar plantilla
 @app.route('/descargar-plantilla')
 def descargar_plantilla():
     try:
@@ -28,6 +45,7 @@ def descargar_plantilla():
     except Exception as e:
         return f"Error al descargar la plantilla: {e}", 500
 
+# RUTA: Procesar archivo Excel
 @app.route('/procesar', methods=['POST'])
 def procesar():
     if 'archivo' not in request.files:
@@ -43,7 +61,10 @@ def procesar():
     try:
         df = pd.read_excel(archivo)
 
-        columnas_requeridas = ['ID Producto', 'Nombre Producto', 'Stock Inicial', 'Entradas', 'Salidas', 'Ventas Totales', 'Stock Final', 'Tiempo', 'Reposición (días)']
+        columnas_requeridas = [
+            'ID Producto', 'Nombre Producto', 'Stock Inicial', 'Entradas', 'Salidas',
+            'Ventas Totales', 'Stock Final', 'Tiempo', 'Reposición (días)'
+        ]
         if not all(col in df.columns for col in columnas_requeridas):
             return "El archivo debe contener las columnas requeridas correctamente.", 400
 
