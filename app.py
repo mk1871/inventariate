@@ -18,8 +18,11 @@ def home():
     return render_template('index.html')
 
 # RUTA: Página para subir Excel
-@app.route('/subir')
+"""@app.route('/subir')
 def subir_excel():
+    return render_template('upload.html')"""
+@app.route('/upload')  # 👈 Esta es la RUTA
+def subir_archivo():   # 👈 Esta es la FUNCIÓN
     return render_template('upload.html')
 
 # RUTA: Página del inventario
