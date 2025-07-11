@@ -90,6 +90,10 @@ def procesar():
         df.to_excel(output, index=False)
         output.seek(0)
 
+        # ✅ Guardar una copia para el dashboard
+        with open('static/inventario_calculado.xlsx', 'wb') as f:
+            f.write(output.getbuffer())
+
         return send_file(
             output,
             as_attachment=True,
