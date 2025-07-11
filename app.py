@@ -17,10 +17,18 @@ def allowed_file(filename):
 def home():
     return render_template('index.html')
 
+@app.route('/dashboard')
+def dashboard():
+    try:
+        df = pd.read_excel('static/inventario_calculado.xlsx')
+        nombres = df["Nombre Producto"].tolist()
+        stocks = df["Stock Final"].tolist()
+        return render_template('dashboard.html', nombres=nombres, stocks=stocks)
+    except Exception as e:
+        return f"Error al cargar el dashboard: {e}", 500
+
+
 # RUTA: Página para subir Excel
-"""@app.route('/subir')
-def subir_excel():
-    return render_template('upload.html')"""
 @app.route('/upload')  # 👈 Esta es la RUTA
 def subir_archivo():   # 👈 Esta es la FUNCIÓN
     return render_template('upload.html')

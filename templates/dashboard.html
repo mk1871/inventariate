@@ -1,0 +1,18 @@
+{% extends "layout.html" %}
+
+{% block content %}
+  <h2>Dashboard de Inventario</h2>
+  <canvas id="grafico" width="600" height="300"></canvas>
+
+  <!-- Pasamos los datos desde Flask a JavaScript -->
+  <script>
+    window.nombres = {{ nombres | tojson }};
+    window.stocks = {{ stocks | tojson }};
+  </script>
+
+  <!-- Cargar Chart.js desde CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Tu archivo JavaScript personalizado -->
+  <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}
