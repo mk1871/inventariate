@@ -1,0 +1,14 @@
+{% extends "layout.html" %}
+{% block title %}Subir archivo - Inventariate{% endblock %}
+{% block content %}
+    <h2>Subir archivo Excel</h2>
+    <form method="post" action="/procesar" enctype="multipart/form-data">
+        <div class="mb-3">
+            <label for="archivo" class="form-label">Selecciona tu archivo Excel</label>
+            <input class="form-control" type="file" name="archivo" id="archivo" required>
+        </div>
+        <button class="btn btn-primary" type="submit">Procesar archivo</button>
+    </form>
+    <br>
+    <a href="/descargar-plantilla" class="btn btn-secondary">Descargar plantilla</a>
+{% endblock %}

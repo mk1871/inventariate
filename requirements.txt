@@ -1,6 +1,17 @@
-flask
-pandas
-openpyxl
-gunicorn
-reportlab
-matplotlib
+flask==3.0.3
+python-dotenv==1.0.1
+pandas==2.2.3
+matplotlib==3.9.2
+reportlab==4.2.2
+gunicorn==22.0.0
+openpyxl==3.1.5
+
+
+
+# INSTRUCCIONES:
+# 1. Crear la rama: git checkout -b modular-version
+# 2. Mover templates a app/templates y static a app/static
+# 3. Ejecutar en local:
+# export FLASK_APP=wsgi.py
+# flask run
+# 4. Para Render: usar wsgi:app con gunicorn
