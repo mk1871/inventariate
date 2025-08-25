@@ -1,17 +1,11 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inventariate - Subir Inventario</title>
-</head>
-<body>
-    <h1>Sube tu archivo de inventario</h1>
-    <form action="/upload" method="POST" enctype="multipart/form-data">
-        <label for="archivo">Selecciona un archivo Excel (.xlsx):</label>
-        <input type="file" name="archivo" id="archivo" accept=".xlsx" required>
-        <br><br>
-        <button type="submit">Procesar archivo</button>
-    </form>
-</body>
-</html>
+{% extends "layout.html" %}
+{% block title %}Inicio - Inventariate{% endblock %}
+{% block content %}
+    <h1 class="mb-4">Bienvenido a Inventariate</h1>
+    <p>Desde este panel podrás gestionar el inventario de tu empresa fácilmente.</p>
+    <ul>
+        <li>Sube tus archivos de inventario en Excel</li>
+        <li>Obtén automáticamente los valores de stock mínimo y seguridad</li>
+        <li>Consulta, modifica o exporta tu inventario</li>
+    </ul>
+{% endblock %}
