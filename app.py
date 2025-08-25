@@ -1,62 +1,19 @@
-from flask import Flask, render_template, request, send_from_directory, send_file
-from werkzeug.utils import secure_filename
+from flask import Flask, render_template, request, send_file
 import pandas as pd
 from io import BytesIO
-import os
+import matplotlib.pyplot as plt
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+from datetime import datetime
 
 app = Flask(__name__)
 
-# Extensiones permitidas
-allowed_extensions = {'xlsx', 'xls'}
-
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_extensions
-
-# RUTA: Página de inicio
+# Ruta principal
 @app.route('/')
 def home():
     return render_template('index.html')
 
-@app.route('/dashboard')
-def dashboard():
-    try:
-        df = pd.read_excel('static/inventario_calculado.xlsx')
-        nombres = df["Nombre Producto"].tolist()
-        stocks = df["Stock Final"].tolist()
-        return render_template('dashboard.html', nombres=nombres, stocks=stocks)
-    except Exception as e:
-        return f"Error al cargar el dashboard: {e}", 500
-
-
-# RUTA: Página para subir Excel
-@app.route('/upload')  # 👈 Esta es la RUTA
-def subir_archivo():   # 👈 Esta es la FUNCIÓN
-    return render_template('upload.html')
-
-# RUTA: Página del inventario
-@app.route('/inventario')
-def inventario():
-    return render_template('inventario.html')
-
-# RUTA: Página de login
-@app.route('/login')
-def login():
-    return render_template('login.html')
-
-# RUTA: Descargar plantilla
-@app.route('/descargar-plantilla')
-def descargar_plantilla():
-    try:
-        return send_from_directory(
-            directory='static',
-            path='Plantilla_Inventario_Usuario.xlsx',
-            as_attachment=True,
-            download_name='Plantilla_Inventario_Usuario.xlsx'
-        )
-    except Exception as e:
-        return f"Error al descargar la plantilla: {e}", 500
-
-# RUTA: Procesar archivo Excel
+# Ruta para procesar el archivo Excel
 @app.route('/procesar', methods=['POST'])
 def procesar():
     if 'archivo' not in request.files:
@@ -66,43 +23,72 @@ def procesar():
     if archivo.filename == '':
         return "No se seleccionó ningún archivo", 400
 
-    if not allowed_file(archivo.filename):
-        return "Tipo de archivo no permitido. Solo se permiten archivos Excel (.xlsx, .xls)", 400
-
     try:
+        # Leer archivo Excel
         df = pd.read_excel(archivo)
 
-        columnas_requeridas = [
-            'ID Producto', 'Nombre Producto', 'Stock Inicial', 'Entradas', 'Salidas',
-            'Ventas Totales', 'Stock Final', 'Tiempo', 'Reposición (días)'
-        ]
-        if not all(col in df.columns for col in columnas_requeridas):
-            return "El archivo debe contener las columnas requeridas correctamente.", 400
+        # Calcular columnas (ejemplo con stock mínimo y máximo)
+        df['Demanda diaria'] = df['Ventas'] / df['Días']
+        df['Stock mínimo'] = df['Demanda diaria'] * df['Tiempo_reposicion']
+        df['Stock seguridad'] = df['Stock mínimo'] * 0.05
+        df['Stock máximo'] = df['Stock mínimo'] + df['Stock seguridad']
 
-        # Cálculos de inventario
-        df['Demanda Diaria'] = df['Ventas Totales'] / df['Tiempo']
-        df['Stock Mínimo'] = df['Demanda Diaria'] * df['Reposición (días)']
-        df['Stock de Seguridad'] = df['Stock Mínimo'] * 0.05
-        df['Stock Mínimo Total'] = df['Stock Mínimo'] + df['Stock de Seguridad']
+        # Guardar archivo Excel procesado temporalmente
+        output_excel = "static/inventario_calculado.xlsx"
+        df.to_excel(output_excel, index=False)
 
-        # Guardar archivo Excel en memoria
-        output = BytesIO()
-        df.to_excel(output, index=False)
-        output.seek(0)
-
-        # ✅ Guardar una copia para el dashboard
-        with open('static/inventario_calculado.xlsx', 'wb') as f:
-            f.write(output.getbuffer())
-
-        return send_file(
-            output,
-            as_attachment=True,
-            download_name="inventario_calculado.xlsx",
-            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
+        return render_template('resultado.html')
 
     except Exception as e:
         return f"Error al procesar el archivo: {e}", 500
+
+# NUEVA RUTA: Generar PDF
+@app.route('/generar_pdf')
+def generar_pdf():
+    try:
+        # Leer el archivo procesado
+        df = pd.read_excel("static/inventario_calculado.xlsx")
+
+        # Estadísticas
+        total_productos = len(df)
+        stock_min_total = df['Stock mínimo'].sum()
+        stock_max_total = df['Stock máximo'].sum()
+        producto_mayor_demanda = df.loc[df['Demanda diaria'].idxmax(), 'Producto']
+
+        # Generar gráfico
+        plt.figure(figsize=(8, 5))
+        plt.bar(df['Producto'], df['Stock mínimo'], label='Stock mínimo')
+        plt.bar(df['Producto'], df['Stock máximo'], label='Stock máximo', alpha=0.7)
+        plt.xticks(rotation=45, ha='right')
+        plt.legend()
+        plt.tight_layout()
+        grafico_path = "static/grafico.png"
+        plt.savefig(grafico_path)
+        plt.close()
+
+        # Crear PDF
+        buffer = BytesIO()
+        c = canvas.Canvas(buffer, pagesize=letter)
+        c.setFont("Helvetica-Bold", 16)
+        c.drawString(200, 750, "Reporte de Inventario")
+        c.setFont("Helvetica", 12)
+        c.drawString(50, 720, f"Fecha: {datetime.now().strftime('%d-%m-%Y %H:%M')}")
+        c.drawString(50, 700, f"Total productos: {total_productos}")
+        c.drawString(50, 680, f"Stock mínimo total: {round(stock_min_total, 2)}")
+        c.drawString(50, 660, f"Stock máximo total: {round(stock_max_total, 2)}")
+        c.drawString(50, 640, f"Producto mayor demanda: {producto_mayor_demanda}")
+
+        # Agregar gráfico
+        c.drawImage(grafico_path, 50, 400, width=500, height=200)
+
+        c.showPage()
+        c.save()
+
+        buffer.seek(0)
+        return send_file(buffer, as_attachment=True, download_name="reporte_inventario.pdf", mimetype='application/pdf')
+
+    except Exception as e:
+        return f"Error al generar el PDF: {e}", 500
 
 if __name__ == '__main__':
     app.run(debug=True, host='127.0.0.1', port=8000)
