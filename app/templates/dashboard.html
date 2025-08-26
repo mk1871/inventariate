@@ -1,18 +1,110 @@
 {% extends "layout.html" %}
+{% block title %}Dashboard - Inventariate{% endblock %}
 
 {% block content %}
-  <h2>Dashboard de Inventario</h2>
-  <canvas id="grafico" width="600" height="300"></canvas>
+    <h2>Dashboard de Inventario y Finanzas</h2>
+    <p>Este es un resumen en tiempo real de los datos del último archivo procesado.</p>
 
-  <!-- Pasamos los datos desde Flask a JavaScript -->
-  <script>
-    window.nombres = {{ nombres | tojson }};
-    window.stocks = {{ stocks | tojson }};
-  </script>
+    <div class="card-container">
+        <div class="card">
+            <h3>Resumen de Ventas</h3>
+            <p><strong>Total de ventas:</strong> ${{ total_ventas | round(0) | int }}</p>
+            <p><strong>Producto más vendido:</strong> {{ resumen.producto_mas_vendido }}</p>
+            <p><strong>Producto menos vendido:</strong> {{ resumen.producto_menos_vendido }}</p>
+            {% if resumen.alerta_presupuesto %}
+                <p class="alerta">{{ resumen.alerta_presupuesto }}</p>
+            {% endif %}
+        </div>
+        
+        <div class="card">
+            <h3>Control de Presupuesto</h3>
+            <canvas id="gaugeChart" width="200" height="150"></canvas>
+            <p class="budget-info">
+                <strong>Gastos Totales:</strong> ${{ total_gastos | round(0) | int }}<br>
+                <strong>Ventas Totales:</strong> ${{ total_ventas | round(0) | int }}<br>
+                <strong>Consumo Neto:</strong> ${{ gasto_neto | round(0) | int }}<br>
+                <strong>Presupuesto:</strong> ${{ resumen.presupuesto_mensual | round(0) | int }}<br>
+                {% if saldo_final >= 0 %}
+                    <strong>Saldo Restante:</strong> ${{ saldo_final | round(0) | int }}
+                {% else %}
+                    <strong style="color:red;">Déficit:</strong> <span style="color:red;">${{ saldo_final | abs | round(0) | int }}</span>
+                {% endif %}
+            </p>
+        </div>
+    </div>
+    
+    <script>
+        function formatCurrency(value) {
+            return '$' + Math.round(value).toLocaleString('es-CO', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            }).replace(',', '.');
+        }
 
-  <!-- Cargar Chart.js desde CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var ctx = document.getElementById('gaugeChart').getContext('2d');
+            
+            var presupuesto = {{ resumen.presupuesto_mensual | default(0) }}; 
+            var gastoNeto = {{ gasto_neto | default(0) }};
+            var saldoFinal = {{ saldo_final | default(0) }};
 
-  <!-- Tu archivo JavaScript personalizado -->
-  <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+            if (presupuesto === 0) {
+                presupuesto = 1;
+            }
+            
+            var porcentajeConsumido = (gastoNeto / presupuesto) * 100;
+            var color;
+            var restante;
+            var valorMedidor;
+
+            if (saldoFinal < 0) {
+                color = 'red';
+                restante = 0;
+                valorMedidor = presupuesto; // Para que el medidor se llene
+            } else {
+                if (porcentajeConsumido < 50) {
+                    color = 'green';
+                } else if (porcentajeConsumido < 80) {
+                    color = 'orange';
+                } else {
+                    color = 'red';
+                }
+                restante = presupuesto - gastoNeto;
+                valorMedidor = gastoNeto;
+            }
+
+            var data = {
+                labels: ['Consumido', 'Restante'],
+                datasets: [{
+                    data: [valorMedidor, restante],
+                    backgroundColor: [color, 'lightgray'],
+                    borderColor: 'white',
+                    borderWidth: 1
+                }]
+            };
+
+            var options = {
+                cutout: '75%',
+                rotation: 270,
+                circumference: 180,
+                tooltips: {
+                    callbacks: {
+                        label: function(tooltipItem, data) {
+                            var label = data.labels[tooltipItem.index] || '';
+                            if (label) {
+                                label += ': ';
+                            }
+                            return label + formatCurrency(data.datasets[0].data[tooltipItem.index]);
+                        }
+                    }
+                }
+            };
+
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: data,
+                options: options
+            });
+        });
+    </script>
 {% endblock %}

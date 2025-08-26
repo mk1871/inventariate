@@ -34,12 +34,13 @@ nav a:hover {
 
 main {
     max-width: 800px;
-    margin: 20px auto; /* Reducido el margen superior para eliminar el espacio */
+    margin: 20px auto;
     background-color: white;
     padding: 30px;
+    padding-bottom: 80px; /* Incrementado el padding inferior */
     border-radius: 10px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-    box-sizing: border-box; /* Asegura que el padding no cause desbordamiento */
+    box-sizing: border-box;
 }
 
 footer {
@@ -47,8 +48,10 @@ footer {
     color: white;
     text-align: center;
     padding: 15px 0;
-    position: relative; /* Cambiado a relativo para que se posicione al final del contenido */
+    position: fixed;
+    bottom: 0;
     width: 100%;
+    z-index: 100;
 }
 
 h2 {
@@ -63,7 +66,7 @@ label {
 }
 
 input[type="text"],
-input[type="password"],
+input[type="number"],
 input[type="file"],
 input[type="submit"] {
     width: 100%;
@@ -101,43 +104,57 @@ input[type="submit"]:hover {
     background-color: #218838;
 }
 
-
-footer {
-    background-color: #1a73e8;
-    color: white;
-    text-align: center;
-    padding: 15px 0;
-    position: fixed; /* Posición fija en la ventana del navegador */
-    bottom: 0; /* Lo fija en la parte inferior */
-    width: 100%;
-    z-index: 100; /* Asegura que esté por encima de otros elementos */
+/* Nuevos estilos para el mensaje de éxito */
+.mensaje-exito {
+    margin-top: 100px !important; /* Asegura que el mensaje se mueva hacia abajo */
 }
 
-/* Agrega un padding en la parte inferior de tu contenedor principal para el footer */
-main {
-    max-width: 800px;
-    margin: 20px auto;
-    background-color: white;
-    padding: 30px;
-    padding-bottom: 60px; /* Espacio extra en la parte inferior para que el contenido no sea cubierto por el footer */
+
+/* Estilos para el Dashboard */
+.card-container {
+    display: flex;
+    justify-content: space-around;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-top: 20px;
+}
+
+.card {
+    background-color: #fff;
     border-radius: 10px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-    box-sizing: border-box;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    width: 350px;
+    text-align: center;
 }
 
+.card h3 {
+    color: #1a73e8;
+    margin-bottom: 10px;
+}
 
-/*
-   Media Queries para Dispositivos Móviles
-   Estos estilos se aplican en pantallas de 768px o menos
-*/
+.card p {
+    margin: 5px 0;
+}
+
+.alerta {
+    color: red;
+    font-weight: bold;
+}
+
+.budget-info {
+    font-size: 1.2em;
+    margin-top: 10px;
+}
+
+/* Media Queries */
 @media (max-width: 768px) {
-    /* Ajustes para el contenedor principal */
     main {
-        padding: 15px; /* Reducido el padding para pantallas más pequeñas */
+        padding: 15px;
         margin: 10px auto;
+        padding-bottom: 80px; /* Mantener el padding para móviles */
     }
-
-    /* Agrupamos los enlaces de descarga para que se vean mejor en móviles */
+    
     .botones-descarga-movil {
         display: flex;
         flex-direction: column;

@@ -14,6 +14,12 @@
             <label for="presupuesto" class="form-label">Ingresa tu presupuesto mensual</label>
             <input class="form-control" type="number" name="presupuesto" id="presupuesto" step="any" value="0" required>
         </div>
+        <div class="mb-3">
+            <label class="form-check-label">
+                <input type="checkbox" class="form-check-input" id="generar_graficos" name="generar_graficos">
+                Incluir gráficos en el reporte
+            </label>
+        </div>
         <button class="btn btn-primary" type="submit">Procesar archivo</button>
     </form>
 
@@ -27,7 +33,7 @@
 
     {% if processed %}
         <hr style="margin-top: 30px;">
-        <h3>¡Archivo procesado con éxito!</h3>
+        <h3 class="mensaje-exito">¡Archivo procesado con éxito!</h3>
         <p>Ahora puedes descargar los archivos calculados.</p>
     {% endif %}
 
