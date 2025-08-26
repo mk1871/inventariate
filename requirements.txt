@@ -5,7 +5,9 @@ matplotlib==3.9.2
 reportlab==4.2.2
 gunicorn==22.0.0
 openpyxl==3.1.5
-
+sqlalchemy
+Flask-SQLAlchemy
+werkzeug
 
 
 # INSTRUCCIONES:

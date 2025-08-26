@@ -2,13 +2,33 @@
 {% block title %}Subir archivo - Inventariate{% endblock %}
 {% block content %}
     <h2>Subir archivo Excel</h2>
+    {% if error %}
+        <div class="alert alert-danger" role="alert">{{ error }}</div>
+    {% endif %}
     <form method="post" action="/procesar" enctype="multipart/form-data">
         <div class="mb-3">
             <label for="archivo" class="form-label">Selecciona tu archivo Excel</label>
             <input class="form-control" type="file" name="archivo" id="archivo" required>
         </div>
+        <div class="mb-3">
+            <label for="presupuesto" class="form-label">Ingresa tu presupuesto mensual</label>
+            <input class="form-control" type="number" name="presupuesto" id="presupuesto" step="any" value="0" required>
+        </div>
         <button class="btn btn-primary" type="submit">Procesar archivo</button>
     </form>
-    <br>
-    <a href="/descargar-plantilla" class="btn btn-secondary">Descargar plantilla</a>
+
+    <div style="margin-top: 20px;">
+        <a href="{{ url_for('main.descargar_plantilla') }}" class="btn btn-secondary" style="margin-right: 15px;">Descargar plantilla</a>
+        {% if processed %}
+            <a href="{{ url_for('static', filename='inventario_calculado.xlsx') }}" class="btn btn-success" style="margin-right: 15px;">Descargar Excel Procesado</a>
+            <a href="{{ url_for('main.generar_pdf_route') }}" class="btn btn-danger">Descargar Reporte PDF</a>
+        {% endif %}
+    </div>
+
+    {% if processed %}
+        <hr style="margin-top: 30px;">
+        <h3>¡Archivo procesado con éxito!</h3>
+        <p>Ahora puedes descargar los archivos calculados.</p>
+    {% endif %}
+
 {% endblock %}

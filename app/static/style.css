@@ -34,11 +34,12 @@ nav a:hover {
 
 main {
     max-width: 800px;
-    margin: 40px auto;
+    margin: 20px auto; /* Reducido el margen superior para eliminar el espacio */
     background-color: white;
     padding: 30px;
     border-radius: 10px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    box-sizing: border-box; /* Asegura que el padding no cause desbordamiento */
 }
 
 footer {
@@ -46,9 +47,8 @@ footer {
     color: white;
     text-align: center;
     padding: 15px 0;
-    position: fixed;
+    position: relative; /* Cambiado a relativo para que se posicione al final del contenido */
     width: 100%;
-    bottom: 0;
 }
 
 h2 {
@@ -99,4 +99,49 @@ input[type="submit"]:hover {
 
 .boton-descargar:hover {
     background-color: #218838;
+}
+
+
+footer {
+    background-color: #1a73e8;
+    color: white;
+    text-align: center;
+    padding: 15px 0;
+    position: fixed; /* Posición fija en la ventana del navegador */
+    bottom: 0; /* Lo fija en la parte inferior */
+    width: 100%;
+    z-index: 100; /* Asegura que esté por encima de otros elementos */
+}
+
+/* Agrega un padding en la parte inferior de tu contenedor principal para el footer */
+main {
+    max-width: 800px;
+    margin: 20px auto;
+    background-color: white;
+    padding: 30px;
+    padding-bottom: 60px; /* Espacio extra en la parte inferior para que el contenido no sea cubierto por el footer */
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    box-sizing: border-box;
+}
+
+
+/*
+   Media Queries para Dispositivos Móviles
+   Estos estilos se aplican en pantallas de 768px o menos
+*/
+@media (max-width: 768px) {
+    /* Ajustes para el contenedor principal */
+    main {
+        padding: 15px; /* Reducido el padding para pantallas más pequeñas */
+        margin: 10px auto;
+    }
+
+    /* Agrupamos los enlaces de descarga para que se vean mejor en móviles */
+    .botones-descarga-movil {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-top: 15px;
+    }
 }
