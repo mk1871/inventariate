@@ -183,6 +183,11 @@ def procesar():
     except Exception as e:
         return render_template("upload.html", error=f"Error al procesar el archivo: {e}"), 500
 
+@main_bp.route("/inventario")
+def inventario():
+    return render_template("inventario.html")
+
+
 @main_bp.route("/generar_pdf")
 def generar_pdf_route():
     try:
@@ -222,7 +227,7 @@ def dashboard():
         with open("app/static/ventas_por_producto.json", 'r') as f:
             ventas_por_producto = json.load(f) if os.path.getsize("app/static/ventas_por_producto.json") > 0 else []
         total_ventas = sum(item.get('Ventas', 0) for item in ventas_por_producto)
-    except (FileNotFoundError, json.JSONDecodeError, KeyError):
+    except (FileNotFound, json.JSONDecodeError, KeyError):
         total_ventas = 0
 
     gasto_neto = total_gastos - total_ventas

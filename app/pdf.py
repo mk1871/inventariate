@@ -123,9 +123,9 @@ def generar_pdf():
         for index, row in df_productos.iterrows():
             pdf.cell(40, 10, str(row.get('Nombre Producto', 'N/A')), 1, 0, 'C')
             pdf.cell(30, 10, str(row.get('Mes', 'N/A')), 1, 0, 'C')
-            pdf.cell(40, 10, str(format_currency(row.get('Stock_Final_Ultimo_Dia', 0))), 1, 0, 'C')
-            pdf.cell(40, 10, str(format_currency(row.get('Stock_Minimo_Promedio', 0))), 1, 0, 'C')
-            pdf.cell(40, 10, str(format_currency(row.get('Stock_Maximo_Promedio', 0))), 1, 1, 'C')
+            pdf.cell(40, 10, str(int(row.get('Stock_Final_Ultimo_Dia', 0))), 1, 0, 'C')
+            pdf.cell(40, 10, f"{row.get('Stock_Minimo_Promedio', 0):.2f}", 1, 0, 'C')
+            pdf.cell(40, 10, f"{row.get('Stock_Maximo_Promedio', 0):.2f}", 1, 1, 'C')
     pdf.ln(5)
     
     if generar_graficos_opcion and (nombres_graficos['ventas'] or nombres_graficos['stock']):
