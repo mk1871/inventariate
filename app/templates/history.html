@@ -1,0 +1,30 @@
+{% extends "layout.html" %}
+{% block title %}Historial de Saldos{% endblock %}
+
+{% block content %}
+    <main>
+        <h2>Historial de Saldos</h2>
+        <p>Aquí puedes ver el historial de tus saldos finales de los últimos 12 meses.</p>
+
+        {% if history_records %}
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Saldo Final</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in history_records %}
+                        <tr>
+                            <td>{{ record.month }} {{ record.year }}</td>
+                            <td>{{ "%.2f"|format(record.balance|float) }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>No hay historial de saldos para mostrar. Sube un archivo en la página de procesamiento para generar un registro.</p>
+        {% endif %}
+    </main>
+{% endblock %}

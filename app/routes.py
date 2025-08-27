@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, send_file, redirect, url_for, send_from_directory
+from flask import Blueprint, render_template, request, send_file, redirect, url_for, send_from_directory, flash
 import pandas as pd
 from .pdf import generar_pdf
 import os
@@ -6,6 +6,9 @@ import json
 from datetime import datetime
 import matplotlib.pyplot as plt
 plt.switch_backend('Agg')
+from . import db, bcrypt
+from .models import User, History
+from flask_login import login_user, current_user, logout_user, login_required
 
 main_bp = Blueprint('main', __name__)
 
@@ -22,13 +25,51 @@ def format_currency_string(value):
 def index():
     return render_template("index.html")
 
+@main_bp.route("/register", methods=['GET', 'POST'])
+def register():
+    if current_user.is_authenticated:
+        return redirect(url_for('main.dashboard'))
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+        user = User(username=username, password=hashed_password)
+        db.session.add(user)
+        db.session.commit()
+        flash('Tu cuenta ha sido creada exitosamente!', 'success')
+        return redirect(url_for('main.login'))
+    return render_template('register.html')
+
+@main_bp.route("/login", methods=['GET', 'POST'])
+def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('main.dashboard'))
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        user = User.query.filter_by(username=username).first()
+        if user and bcrypt.check_password_hash(user.password, password):
+            login_user(user)
+            return redirect(url_for('main.dashboard'))
+        else:
+            flash('Usuario o contraseña incorrectos', 'danger')
+    return render_template('login.html')
+
+@main_bp.route("/logout")
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for('main.index'))
+
 @main_bp.route("/upload", methods=["GET"])
+@login_required
 def upload():
     processed = request.args.get('processed')
     cache_buster = datetime.now().strftime('%Y%m%d%H%M%S')
     return render_template("upload.html", processed=processed, cache_buster=cache_buster)
 
 @main_bp.route("/procesar", methods=["POST"])
+@login_required
 def procesar():
     if 'archivo' not in request.files:
         return redirect(url_for('main.upload', error="No se seleccionó ningún archivo."))
@@ -94,6 +135,22 @@ def procesar():
             if saldo_final < 0:
                 deficit = abs(saldo_final)
                 alerta_presupuesto = f"¡Alerta! Tienes un déficit de {format_currency_string(deficit)}."
+            
+            # Save historical data to the database
+            if current_user.is_authenticated:
+                month_year = datetime.now().strftime('%B %Y')
+                current_month_history = History.query.filter_by(user_id=current_user.id, month=datetime.now().strftime('%B'), year=datetime.now().year).first()
+                if current_month_history:
+                    current_month_history.balance = saldo_final
+                else:
+                    new_history = History(
+                        month=datetime.now().strftime('%B'),
+                        year=datetime.now().year,
+                        balance=saldo_final,
+                        owner=current_user
+                    )
+                    db.session.add(new_history)
+                db.session.commit()
             
             if 'Stock Final' in df.columns and 'Nombre Producto' in df.columns:
                 df_sorted = df.sort_values('Fecha')
@@ -187,8 +244,14 @@ def procesar():
 def inventario():
     return render_template("inventario.html")
 
+@main_bp.route("/history")
+@login_required
+def history():
+    history_records = History.query.filter_by(owner=current_user).order_by(History.date_recorded.desc()).limit(12).all()
+    return render_template('history.html', history_records=history_records)
 
 @main_bp.route("/generar_pdf")
+@login_required
 def generar_pdf_route():
     try:
         pdf_stream = generar_pdf()
@@ -202,6 +265,7 @@ def generar_pdf_route():
         return f"Error al generar el PDF: {e}", 500
 
 @main_bp.route("/dashboard")
+@login_required
 def dashboard():
     try:
         with open("app/static/resumen_ventas.json", 'r') as f:
@@ -227,7 +291,7 @@ def dashboard():
         with open("app/static/ventas_por_producto.json", 'r') as f:
             ventas_por_producto = json.load(f) if os.path.getsize("app/static/ventas_por_producto.json") > 0 else []
         total_ventas = sum(item.get('Ventas', 0) for item in ventas_por_producto)
-    except (FileNotFound, json.JSONDecodeError, KeyError):
+    except (FileNotFoundError, json.JSONDecodeError, KeyError):
         total_ventas = 0
 
     gasto_neto = total_gastos - total_ventas
