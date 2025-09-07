@@ -1,20 +1,21 @@
-from flask import Blueprint, render_template, request, send_file, redirect, url_for, send_from_directory, flash
+from flask import Blueprint, render_template, request, send_file, redirect, url_for, send_from_directory, flash, session
 import pandas as pd
 from .pdf import generar_pdf
 import os
 import json
 from datetime import datetime
 import matplotlib.pyplot as plt
+
 plt.switch_backend('Agg')
 from . import db, bcrypt
 from .models import User, History
 from flask_login import login_user, current_user, logout_user, login_required
 import io
 import uuid
-from flask import session  # <- Asegúrate de que session esté importado
 from .s3_utils import upload_file_obj_to_s3, download_file_obj_from_s3, generate_presigned_url
 
 main_bp = Blueprint('main', __name__)
+
 
 def format_currency_string(value):
     """
@@ -25,9 +26,17 @@ def format_currency_string(value):
     value = int(round(value))
     return f"${value:,}".replace(",", ".")
 
+
 @main_bp.route("/")
 def index():
     return render_template("index.html")
+
+
+@main_bp.route("/inventario")
+def inventario():
+    """Página de inventario - AÑADIDA ESTA FUNCIÓN FALTANTE"""
+    return render_template("inventario.html")
+
 
 @main_bp.route("/register", methods=['GET', 'POST'])
 def register():
@@ -44,6 +53,7 @@ def register():
         return redirect(url_for('main.login'))
     return render_template('register.html')
 
+
 @main_bp.route("/login", methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
@@ -59,11 +69,13 @@ def login():
             flash('Usuario o contraseña incorrectos', 'danger')
     return render_template('login.html')
 
+
 @main_bp.route("/logout")
 @login_required
 def logout():
     logout_user()
     return redirect(url_for('main.index'))
+
 
 @main_bp.route("/upload", methods=["GET"])
 @login_required
@@ -71,6 +83,7 @@ def upload():
     processed = request.args.get('processed')
     cache_buster = datetime.now().strftime('%Y%m%d%H%M%S')
     return render_template("upload.html", processed=processed, cache_buster=cache_buster)
+
 
 @main_bp.route("/procesar", methods=["POST"])
 @login_required
@@ -291,46 +304,100 @@ def procesar():
     except Exception as e:
         return render_template("upload.html", error=f"Error al procesar el archivo: {e}"), 500
 
+
+@main_bp.route("/history")
+@login_required
+def history():
+    history_records = History.query.filter_by(owner=current_user).order_by(History.date_recorded.desc()).limit(12).all()
+    return render_template('history.html', history_records=history_records)
+
+
+@main_bp.route("/generar_pdf")
+@login_required
+def generar_pdf_route():
+    try:
+        pdf_stream = generar_pdf()
+        return send_file(
+            pdf_stream,
+            as_attachment=True,
+            download_name='Reporte_Inventario.pdf',
+            mimetype='application/pdf'
+        )
+    except Exception as e:
+        return f"Error al generar el PDF: {e}", 500
+
+
 @main_bp.route("/dashboard")
 @login_required
 def dashboard():
     try:
-        with open("app/static/resumen_ventas.json", 'r') as f:
-            resumen_ventas = json.load(f) if os.path.getsize("app/static/resumen_ventas.json") > 0 else {}
-    except (FileNotFoundError, json.JSONDecodeError):
-        resumen_ventas = {
-            'total_ventas': 0,
-            'producto_mas_vendido': 'N/A',
-            'producto_menos_vendido': 'N/A',
-            'alerta_presupuesto': '',
-            'presupuesto_mensual': 0,
-            'saldo_final': 0
-        }
-    
-    try:
-        with open("app/static/gastos_por_mes.json", 'r') as f:
-            gastos_por_mes = json.load(f) if os.path.getsize("app/static/gastos_por_mes.json") > 0 else []
-        total_gastos = sum(item.get('Gastos(compras)', 0) for item in gastos_por_mes)
-    except (FileNotFoundError, json.JSONDecodeError, KeyError):
-        total_gastos = 0
+        session_id = session.get('processing_session')
+        bucket_name = session.get('bucket_name')
 
-    try:
-        with open("app/static/ventas_por_producto.json", 'r') as f:
-            ventas_por_producto = json.load(f) if os.path.getsize("app/static/ventas_por_producto.json") > 0 else []
-        total_ventas = sum(item.get('Ventas', 0) for item in ventas_por_producto)
-    except (FileNotFoundError, json.JSONDecodeError, KeyError):
-        total_ventas = 0
+        if session_id and bucket_name:
+            # Descargar resumen_ventas.json desde S3
+            resumen_content = download_file_obj_from_s3(bucket_name, f"{session_id}/resumen_ventas.json")
+            if resumen_content:
+                resumen_ventas = json.loads(resumen_content.getvalue().decode('utf-8'))
+            else:
+                resumen_ventas = {
+                    'total_ventas': 0,
+                    'producto_mas_vendido': 'N/A',
+                    'producto_menos_vendido': 'N/A',
+                    'alerta_presupuesto': '',
+                    'presupuesto_mensual': 0,
+                    'saldo_final': 0
+                }
 
-    gasto_neto = total_gastos - total_ventas
+            # Descargar gastos_por_mes.json desde S3
+            gastos_content = download_file_obj_from_s3(bucket_name, f"{session_id}/gastos_por_mes.json")
+            if gastos_content:
+                gastos_por_mes = json.loads(gastos_content.getvalue().decode('utf-8'))
+                total_gastos = sum(item.get('Gastos(compras)', 0) for item in gastos_por_mes)
+            else:
+                total_gastos = 0
 
-    return render_template(
-        "dashboard.html",
-        resumen=resumen_ventas,
-        total_gastos=total_gastos,
-        total_ventas=total_ventas,
-        gasto_neto=gasto_neto,
-        saldo_final=resumen_ventas.get('saldo_final', 0)
-    )
+            # Descargar ventas_por_producto.json desde S3
+            ventas_content = download_file_obj_from_s3(bucket_name, f"{session_id}/ventas_por_producto.json")
+            if ventas_content:
+                ventas_por_producto = json.loads(ventas_content.getvalue().decode('utf-8'))
+                total_ventas = sum(item.get('Ventas', 0) for item in ventas_por_producto)
+            else:
+                total_ventas = 0
+        else:
+            resumen_ventas = {
+                'total_ventas': 0,
+                'producto_mas_vendido': 'N/A',
+                'producto_menos_vendido': 'N/A',
+                'alerta_presupuesto': '',
+                'presupuesto_mensual': 0,
+                'saldo_final': 0
+            }
+            total_gastos = 0
+            total_ventas = 0
+
+        gasto_neto = total_gastos - total_ventas
+
+        return render_template(
+            "dashboard.html",
+            resumen=resumen_ventas,
+            total_gastos=total_gastos,
+            total_ventas=total_ventas,
+            gasto_neto=gasto_neto,
+            saldo_final=resumen_ventas.get('saldo_final', 0)
+        )
+
+    except Exception as e:
+        flash(f"Error al cargar el dashboard: {str(e)}", "danger")
+        return render_template(
+            "dashboard.html",
+            resumen={},
+            total_gastos=0,
+            total_ventas=0,
+            gasto_neto=0,
+            saldo_final=0
+        )
+
 
 @main_bp.route("/descargar-plantilla")
 def descargar_plantilla():
