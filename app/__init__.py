@@ -12,11 +12,23 @@ db = SQLAlchemy()
 login_manager = LoginManager()
 bcrypt = Bcrypt()
 
+
 def create_app():
     app = Flask(__name__)
-    app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'tu_clave_secreta_aqui')  # <- Modificar esta línea
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///inventariate.db')  # <- Modificar esta línea
+
+    # ✅ CORRECCIÓN IMPORTANTE: Configuración de base de datos
+    database_url = os.getenv('DATABASE_URL')
+    if database_url:
+        # Convertir postgres:// a postgresql:// para SQLAlchemy
+        if database_url.startswith("postgres://"):
+            database_url = database_url.replace("postgres://", "postgresql://", 1)
+        app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+    else:
+        # SQLite para desarrollo local
+        app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///inventariate.db'
+
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'tu_clave_secreta_aqui')
 
     db.init_app(app)
     login_manager.init_app(app)

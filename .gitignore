@@ -193,4 +193,4 @@ jupyter_notebook_config.py
 
 # Local development files
 local_settings.py
-local_config.py
+local_config.pyrequirements_local.txt

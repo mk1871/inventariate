@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: inventariate
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn wsgi:app
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: inventariate-db
+          property: connectionString
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: AWS_REGION
+        value: us-east-1
+      - key: S3_BUCKET_NAME
+        sync: false
+      - key: SECRET_KEY
+        generateValue: true
+
+databases:
+  - name: inventariate-db
+    databaseName: inventariate
+    user: inventariate_user
+    plan: free
