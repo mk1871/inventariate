@@ -22,7 +22,7 @@ def create_app():
     if database_url:
         # Convertir postgres:// a postgresql:// para SQLAlchemy
         if database_url.startswith("postgres://"):
-            database_url = database_url.replace("postgres://", "postgresql://", 1)
+            database_url = database_url.replace("postgres://", "postgresql+psycopg://", 1)
         app.config['SQLALCHEMY_DATABASE_URI'] = database_url
         print("✅ Usando PostgreSQL en Render")
     else:
