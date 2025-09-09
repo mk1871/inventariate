@@ -194,4 +194,7 @@ jupyter_notebook_config.py
 # Local development files
 local_settings.py
 local_config.pyrequirements_local.txt
-migrations/
+# Archivos de migraciones que se regeneran
+migrations/README
+migrations/alembic.ini
+migrations/script.py.mako
