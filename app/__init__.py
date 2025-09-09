@@ -24,13 +24,15 @@ def create_app():
     print(f"🔍 DATABASE_URL desde entorno: {database_url}")
 
     if database_url and database_url.strip():
-        # Convertir postgres:// a postgresql:// para SQLAlchemy con psycopg3
+        # Convertir a psycopg3 explícitamente
         if database_url.startswith("postgres://"):
             database_url = database_url.replace("postgres://", "postgresql+psycopg://", 1)
+        elif database_url.startswith("postgresql://"):
+            database_url = database_url.replace("postgresql://", "postgresql+psycopg://", 1)
+
         app.config['SQLALCHEMY_DATABASE_URI'] = database_url
-        print(f"✅ Usando PostgreSQL en Render: {database_url}")
+        print(f"✅ Usando PostgreSQL con psycopg3: {database_url}")
     else:
-        # SQLite para desarrollo local
         app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///inventariate.db'
         print("✅ Usando SQLite local")
 
