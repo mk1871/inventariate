@@ -14,12 +14,9 @@ login_manager = LoginManager()
 bcrypt = Bcrypt()
 migrate = Migrate()
 
+
 def create_app():
     app = Flask(__name__)
-
-    # ✅ SOLUCIÓN TEMPORAL - Hardcodea la URL para testing
-    database_url = os.getenv('DATABASE_URL',
-                             'postgresql://inventariate_db_user:CV59oRwHm9p2TVvuOtQHvx8TRHUWCGLb@dpg-d2vjio7diees738esntg-a.ohio-postgres.render.com/inventariate_db')
 
     # ✅ Configuración de base de datos para Render
     database_url = os.getenv('DATABASE_URL')
@@ -27,7 +24,7 @@ def create_app():
     print(f"🔍 DATABASE_URL desde entorno: {database_url}")
 
     if database_url and database_url.strip():
-        # Convertir postgres:// a postgresql:// para SQLAlchemy
+        # Convertir postgres:// a postgresql:// para SQLAlchemy con psycopg3
         if database_url.startswith("postgres://"):
             database_url = database_url.replace("postgres://", "postgresql+psycopg://", 1)
         app.config['SQLALCHEMY_DATABASE_URI'] = database_url
@@ -35,7 +32,7 @@ def create_app():
     else:
         # SQLite para desarrollo local
         app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///inventariate.db'
-        print("⚠️  Usando SQLite local - DATABASE_URL no encontrada")
+        print("✅ Usando SQLite local")
 
     db.init_app(app)
     login_manager.init_app(app)
