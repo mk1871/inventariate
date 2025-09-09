@@ -196,5 +196,4 @@ local_settings.py
 local_config.pyrequirements_local.txt
 # Archivos de migraciones que se regeneran
 migrations/README
-migrations/alembic.ini
 migrations/script.py.mako
