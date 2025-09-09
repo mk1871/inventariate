@@ -20,10 +20,9 @@ migrate = Migrate()
 
 def _mask_conn_str(url: str) -> str:
     """Enmascara usuario y password en la URL para logs seguros."""
-    # p.ej: postgresql+psycopg://user:pass@host:5432/db -> postgresql+psycopg://***:***@host/db
     try:
         import urllib.parse as up
-        parsed = up.urlsplit(url)
+        parsed = up.urlsplit(url or "")
         netloc = parsed.netloc
         if "@" in netloc:
             creds, host = netloc.split("@", 1)
@@ -56,20 +55,34 @@ def create_app():
 
     # ===== Base de datos =====
     raw_url = os.getenv("DATABASE_URL")
-    masked = _mask_conn_str(raw_url) if raw_url else "sqlite:///inventariate.db"
-    print(f"🔍 DATABASE_URL (mascada): {masked}")
+    print(f"🔍 DATABASE_URL (mascada): {_mask_conn_str(raw_url) if raw_url else 'sqlite:///inventariate.db'}")
 
     if raw_url:
         # Convierte postgres:// o postgresql:// → postgresql+psycopg:// (psycopg3)
         url = re.sub(r"^postgres(ql)?:\/\/", "postgresql+psycopg://", raw_url)
         app.config["SQLALCHEMY_DATABASE_URI"] = url
-        print(f"✅ Driver psycopg3 activado → { _mask_conn_str(url) }")
+        print(f"✅ Driver psycopg3 activado → {_mask_conn_str(url)}")
     else:
         app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///inventariate.db"
         print("✅ Usando SQLite local")
 
-    # Opcional: mejora de rendimiento/logs
+    # ===== Opciones de SQLAlchemy (anti-conexiones muertas) =====
     app.config.setdefault("SQLALCHEMY_TRACK_MODIFICATIONS", False)
+
+    # Solo aplicamos opciones de pool para Postgres (no SQLite)
+    if app.config["SQLALCHEMY_DATABASE_URI"].startswith("postgresql+psycopg://"):
+        engine_opts = {
+            "pool_pre_ping": True,   # Verifica la conexión antes de usarla
+            "pool_recycle": 300,     # Recicla conexiones cada ~5 minutos
+            # Ajustes conservadores para free tier; puedes tunear si lo necesitas
+            "pool_size": 5,
+            "max_overflow": 5,
+            "pool_timeout": 30,
+        }
+        # Fuerza SSL si la URL no trae sslmode
+        if "sslmode=" not in app.config["SQLALCHEMY_DATABASE_URI"]:
+            engine_opts["connect_args"] = {"sslmode": "require"}
+        app.config.setdefault("SQLALCHEMY_ENGINE_OPTIONS", engine_opts)
 
     # Inicializar extensiones
     db.init_app(app)
@@ -83,9 +96,12 @@ def create_app():
     from .routes import main_bp
     app.register_blueprint(main_bp)
 
-    # Log de driver y prueba de conexión (no imprime secretos)
+    # Log de driver y prueba de conexión (usa las mismas engine options)
     try:
-        engine = sa.create_engine(app.config["SQLALCHEMY_DATABASE_URI"])
+        engine = sa.create_engine(
+            app.config["SQLALCHEMY_DATABASE_URI"],
+            **app.config.get("SQLALCHEMY_ENGINE_OPTIONS", {})
+        )
         app.logger.info(f"SQLAlchemy {sa.__version__}, driver: {engine.dialect.driver}")
         with engine.connect() as conn:
             conn.execute(sa.text("SELECT 1"))
