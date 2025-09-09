@@ -45,25 +45,16 @@ def create_app():
     from .routes import main_bp
     app.register_blueprint(main_bp)
 
-    # 🔎 (1) LOG INMEDIATO AL ARRANCAR: crea un engine temporal y loguea driver
+    # 🔎 Log inmediato al arrancar: muestra versión de SQLAlchemy y driver activo
     try:
         engine = sa.create_engine(app.config['SQLALCHEMY_DATABASE_URI'])
         app.logger.info(f"SQLAlchemy {sa.__version__}, driver: {engine.dialect.driver}")
-        # Opcional: forzar una conexión para validar credenciales/driver
+        # Opcional: validar conexión
         with engine.connect() as conn:
             conn.execute(sa.text("SELECT 1"))
             app.logger.info("Conexión a DB verificada (SELECT 1 OK).")
     except Exception as e:
         app.logger.error(f"Engine creation/connection failed: {e}")
-
-    # 🕐 (2) LOG EN LA PRIMERA PETICIÓN HTTP
-    @app.before_first_request
-    def log_sqlalchemy_info():
-        try:
-            engine = sa.create_engine(app.config['SQLALCHEMY_DATABASE_URI'])
-            app.logger.info(f"[on first request] SQLAlchemy {sa.__version__}, driver: {engine.dialect.driver}")
-        except Exception as e:
-            app.logger.error(f"[on first request] Engine creation failed: {e}")
 
     # No crear tablas automáticamente en producción - usar migraciones
     if not database_url:  # Solo en desarrollo local con SQLite
