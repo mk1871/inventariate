@@ -5,8 +5,13 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn wsgi:app
     envVars:
+      # Toma automáticamente la cadena de conexión desde la DB declarada abajo
       - key: DATABASE_URL
-        value: postgresql://inventariate_db_user:CV59oRwHm9p2TVvuOtQHvx8TRHUWCGLb@dpg-d2vjio7diees738esntg-a.ohio-postgres.render.com/inventariate_db
+        fromDatabase:
+          name: inventariate-db
+          property: connectionString
+
+      # Claves de AWS: mantenlas fuera del repo (ponlas en el Dashboard)
       - key: AWS_ACCESS_KEY_ID
         sync: false
       - key: AWS_SECRET_ACCESS_KEY
@@ -15,11 +20,13 @@ services:
         value: us-east-1
       - key: S3_BUCKET_NAME
         sync: false
+
+      # SECRET_KEY seguro generado por Render (no queda en el repo)
       - key: SECRET_KEY
         generateValue: true
 
 databases:
-  - name: inventariate-db
-    databaseName: inventariate_db
-    user: inventariate_db_user
+  - name: inventariate-db            # nombre del recurso en Render (puede ser cualquiera)
+    databaseName: inventariate_db_roeq
+    user: inventariate_db_roeq_user
     plan: free

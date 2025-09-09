@@ -35,7 +35,7 @@ MANIFEST
 .env.local
 .env.production
 .env.test
-.env.*
+.env
 .venv
 
 # Archivos de IDE
