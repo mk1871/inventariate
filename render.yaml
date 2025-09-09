@@ -3,15 +3,16 @@ services:
     name: inventariate
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn wsgi:app
+    startCommand: bash -c "echo '==> Running DB upgrade' && flask db upgrade && echo '==> Starting gunicorn' && gunicorn wsgi:app"
     envVars:
-      # Toma automáticamente la cadena de conexión desde la DB declarada abajo
+      - key: FLASK_APP
+        value: wsgi.py
       - key: DATABASE_URL
         fromDatabase:
           name: inventariate-db
           property: connectionString
-
-      # Claves de AWS: mantenlas fuera del repo (ponlas en el Dashboard)
+      - key: SECRET_KEY
+        generateValue: true
       - key: AWS_ACCESS_KEY_ID
         sync: false
       - key: AWS_SECRET_ACCESS_KEY
@@ -21,12 +22,8 @@ services:
       - key: S3_BUCKET_NAME
         sync: false
 
-      # SECRET_KEY seguro generado por Render (no queda en el repo)
-      - key: SECRET_KEY
-        generateValue: true
-
 databases:
-  - name: inventariate-db            # nombre del recurso en Render (puede ser cualquiera)
+  - name: inventariate-db
     databaseName: inventariate_db_roeq
     user: inventariate_db_roeq_user
     plan: free
