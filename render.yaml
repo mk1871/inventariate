@@ -6,9 +6,7 @@ services:
     startCommand: gunicorn wsgi:app
     envVars:
       - key: DATABASE_URL
-        fromDatabase:
-          name: inventariate-db
-          property: connectionString
+        value: postgresql://inventariate_db_user:CV59oRwHm9p2TVvuOtQHvx8TRHUWCGLb@dpg-d2vjio7diees738esntg-a.ohio-postgres.render.com/inventariate_db
       - key: AWS_ACCESS_KEY_ID
         sync: false
       - key: AWS_SECRET_ACCESS_KEY
@@ -22,6 +20,6 @@ services:
 
 databases:
   - name: inventariate-db
-    databaseName: inventariate
-    user: inventariate_user
+    databaseName: inventariate_db
+    user: inventariate_db_user
     plan: free
